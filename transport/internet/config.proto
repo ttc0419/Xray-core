@@ -11,11 +11,7 @@ import "common/serial/typed_message.proto";
 enum TransportProtocol {
   TCP = 0;
   UDP = 1;
-  MKCP = 2;
-  WebSocket = 3;
-  HTTP = 4;
   DomainSocket = 5;
-  HTTPUpgrade = 6;
 }
 
 enum DomainStrategy {

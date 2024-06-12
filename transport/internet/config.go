@@ -35,16 +35,8 @@ func transportProtocolToString(protocol TransportProtocol) string {
 		return "tcp"
 	case TransportProtocol_UDP:
 		return "udp"
-	case TransportProtocol_HTTP:
-		return "http"
-	case TransportProtocol_MKCP:
-		return "mkcp"
-	case TransportProtocol_WebSocket:
-		return "websocket"
 	case TransportProtocol_DomainSocket:
 		return "domainsocket"
-	case TransportProtocol_HTTPUpgrade:
-		return "httpupgrade"
 	default:
 		return unknownProtocol
 	}
