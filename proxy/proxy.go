@@ -29,7 +29,6 @@ import (
 	"github.com/xtls/xray-core/transport"
 	"github.com/xtls/xray-core/transport/internet"
 	"github.com/xtls/xray-core/transport/internet/finalmask"
-	"github.com/xtls/xray-core/transport/internet/reality"
 	"github.com/xtls/xray-core/transport/internet/stat"
 	"github.com/xtls/xray-core/transport/internet/tls"
 )
@@ -692,10 +691,6 @@ func UnwrapRawConn(conn net.Conn) (net.Conn, stats.Counter, stats.Counter) {
 				conn = xc.NetConn()
 			} else if utlsConn, ok := conn.(*tls.UConn); ok {
 				conn = utlsConn.NetConn()
-			} else if realityConn, ok := conn.(*reality.Conn); ok {
-				conn = realityConn.NetConn()
-			} else if realityUConn, ok := conn.(*reality.UConn); ok {
-				conn = realityUConn.NetConn()
 			}
 		}
 

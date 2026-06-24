@@ -465,12 +465,6 @@ func (c *Config) GetTLSConfig(opts ...Option) *tls.Config {
 			config.KeyLogWriter = writer
 		}
 	}
-	if len(c.EchConfigList) > 0 || len(c.EchServerKeys) > 0 {
-		err := ApplyECH(c, config)
-		if err != nil {
-			errors.LogError(context.Background(), err)
-		}
-	}
 
 	return config
 }
