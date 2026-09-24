@@ -16,7 +16,6 @@ import (
 	"github.com/xtls/xray-core/common/serial"
 	core "github.com/xtls/xray-core/core"
 	"github.com/xtls/xray-core/proxy/freedom"
-	"github.com/xtls/xray-core/proxy/masque"
 	"github.com/xtls/xray-core/transport/internet"
 )
 
@@ -25,33 +24,20 @@ var (
 		"tunnel":        func() interface{} { return new(DokodemoConfig) },
 		"dokodemo-door": func() interface{} { return new(DokodemoConfig) },
 		"http":          func() interface{} { return new(HTTPServerConfig) },
-		"shadowsocks":   func() interface{} { return new(ShadowsocksServerConfig) },
 		"mixed":         func() interface{} { return new(SocksServerConfig) },
 		"socks":         func() interface{} { return new(SocksServerConfig) },
 		"vless":         func() interface{} { return new(VLessInboundConfig) },
-		"vmess":         func() interface{} { return new(VMessInboundConfig) },
-		"trojan":        func() interface{} { return new(TrojanServerConfig) },
-		"wireguard":     func() interface{} { return &WireGuardConfig{IsClient: false} },
-		"hysteria":      func() interface{} { return new(HysteriaServerConfig) },
-		"tun":           func() interface{} { return new(TunConfig) },
 	}, "protocol", "settings")
 
 	outboundConfigLoader = NewJSONConfigLoader(ConfigCreatorCache{
-		"block":       func() interface{} { return new(BlackholeConfig) },
-		"blackhole":   func() interface{} { return new(BlackholeConfig) },
-		"loopback":    func() interface{} { return new(LoopbackConfig) },
-		"direct":      func() interface{} { return new(FreedomConfig) },
-		"freedom":     func() interface{} { return new(FreedomConfig) },
-		"http":        func() interface{} { return new(HTTPClientConfig) },
-		"shadowsocks": func() interface{} { return new(ShadowsocksClientConfig) },
-		"socks":       func() interface{} { return new(SocksClientConfig) },
-		"vless":       func() interface{} { return new(VLessOutboundConfig) },
-		"vmess":       func() interface{} { return new(VMessOutboundConfig) },
-		"trojan":      func() interface{} { return new(TrojanClientConfig) },
-		"hysteria":    func() interface{} { return new(HysteriaClientConfig) },
-		"masque":      func() interface{} { return new(MasqueClientConfig) },
-		"dns":         func() interface{} { return new(DNSOutboundConfig) },
-		"wireguard":   func() interface{} { return &WireGuardConfig{IsClient: true} },
+		"block":     func() interface{} { return new(BlackholeConfig) },
+		"blackhole": func() interface{} { return new(BlackholeConfig) },
+		"direct":    func() interface{} { return new(FreedomConfig) },
+		"freedom":   func() interface{} { return new(FreedomConfig) },
+		"http":      func() interface{} { return new(HTTPClientConfig) },
+		"socks":     func() interface{} { return new(SocksClientConfig) },
+		"vless":     func() interface{} { return new(VLessOutboundConfig) },
+		"dns":       func() interface{} { return new(DNSOutboundConfig) },
 	}, "protocol", "settings")
 )
 
@@ -249,12 +235,6 @@ func validateOutboundTransportSecurity(rawConfig interface{}, senderSettings *pr
 		}
 	}
 
-	if tjCfg, ok := rawConfig.(*TrojanClientConfig); ok {
-		if requiresTransportSecurity(tjCfg.Servers[0].Address) {
-			return errors.New("trojan without TLS is prohibited unless the server address is a private IP or domain")
-		}
-	}
-
 	return nil
 }
 
@@ -340,14 +320,6 @@ func (c *OutboundDetourConfig) Build() (*core.OutboundHandlerConfig, error) {
 		return nil, err
 	}
 
-	if _, ok := ts.(*masque.ClientConfig); ok {
-		if ms := senderSettings.MultiplexSettings; ms != nil && ms.Enabled {
-			return nil, errors.New(`masque outbound does not support "mux"`)
-		}
-	} else if senderSettings.StreamSettings != nil && senderSettings.StreamSettings.ProtocolName == "masque" {
-		return nil, errors.New("the masque transport can only be used by the masque outbound")
-	}
-
 	if fc, ok := ts.(*freedom.Config); ok {
 		if senderSettings.StreamSettings != nil &&
 			senderSettings.StreamSettings.SocketSettings != nil &&
@@ -407,8 +379,6 @@ type Config struct {
 	InboundConfigs   []InboundDetourConfig   `json:"inbounds"`
 	OutboundConfigs  []OutboundDetourConfig  `json:"outbounds"`
 	Policy           *PolicyConfig           `json:"policy"`
-	API              *APIConfig              `json:"api"`
-	Metrics          *MetricsConfig          `json:"metrics"`
 	Stats            *StatsConfig            `json:"stats"`
 	Reverse          *ReverseConfig          `json:"reverse"`
 	FakeDNS          *FakeDNSConfig          `json:"fakeDns"`
@@ -464,12 +434,6 @@ func (c *Config) Override(o *Config, fn string) {
 	}
 	if o.Policy != nil {
 		c.Policy = o.Policy
-	}
-	if o.API != nil {
-		c.API = o.API
-	}
-	if o.Metrics != nil {
-		c.Metrics = o.Metrics
 	}
 	if o.Stats != nil {
 		c.Stats = o.Stats
@@ -555,20 +519,6 @@ func (c *Config) Build() (*core.Config, error) {
 		},
 	}
 
-	if c.API != nil {
-		apiConf, err := c.API.Build()
-		if err != nil {
-			return nil, errors.New("failed to build API configuration").Base(err)
-		}
-		config.App = append(config.App, serial.ToTypedMessage(apiConf))
-	}
-	if c.Metrics != nil {
-		metricsConf, err := c.Metrics.Build()
-		if err != nil {
-			return nil, errors.New("failed to build metrics configuration").Base(err)
-		}
-		config.App = append(config.App, serial.ToTypedMessage(metricsConf))
-	}
 	if c.Stats != nil {
 		statsConf, err := c.Stats.Build()
 		if err != nil {
